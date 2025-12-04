@@ -1,20 +1,62 @@
-import React, { createContext, useContext, useState, useMemo } from 'react';
-import { initialEvents, initialPhotos, initialMessages, circles, currentUser } from '../data';
+import React, { createContext, useContext, useState, useMemo, useEffect } from 'react';
+import { initialEvents, initialPhotos, initialMessages, circles, users, currentUser as defaultUser } from '../data';
 import { isSameDay } from 'date-fns';
 
 const AppContext = createContext();
 
+const STORAGE_KEY = 'kincal_data';
+
+// Helper to load initial state from local storage or fallback to data.js
+const loadInitialState = () => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      // Revive Date objects from ISO strings
+      return {
+        events: (parsed.events || []).map(e => ({ ...e, date: new Date(e.date) })),
+        photos: (parsed.photos || []).map(p => ({ ...p, date: new Date(p.date) })),
+        messages: (parsed.messages || []).map(m => ({ ...m, timestamp: new Date(m.timestamp) })),
+        currentUser: parsed.currentUser || defaultUser
+      };
+    }
+  } catch (error) {
+    console.error("Failed to parse local storage data:", error);
+  }
+
+  // Fallback to initial data
+  return {
+    events: initialEvents,
+    photos: initialPhotos,
+    messages: initialMessages,
+    currentUser: defaultUser
+  };
+};
+
 export const AppProvider = ({ children }) => {
+  // Load initial data once.
+  const [initialData] = useState(loadInitialState);
+
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [activeCircleFilter, setActiveCircleFilter] = useState('all'); // 'all' or circleId
-  const [events, setEvents] = useState(initialEvents);
-  const [photos, setPhotos] = useState(initialPhotos);
-  const [messages, setMessages] = useState(initialMessages);
+
+  const [events, setEvents] = useState(initialData.events);
+  const [photos, setPhotos] = useState(initialData.photos);
+  const [messages, setMessages] = useState(initialData.messages);
+  const [currentUser, setCurrentUser] = useState(initialData.currentUser);
+
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-  // Helper to check if a user has access to a circle (implied logic: user sees circles they are in)
-  // For this MVP, we assume the user is in all circles, but filtering hides content.
-  // The 'activeCircleFilter' determines what is currently visible on the screen.
+  // Persistence Effect: Save to localStorage whenever state changes
+  useEffect(() => {
+    const dataToSave = {
+      events,
+      photos,
+      messages,
+      currentUser
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+  }, [events, photos, messages, currentUser]);
 
   const filteredEvents = useMemo(() => {
     if (activeCircleFilter === 'all') return events;
@@ -27,8 +69,7 @@ export const AppProvider = ({ children }) => {
   }, [photos, activeCircleFilter]);
 
   const filteredMessages = useMemo(() => {
-    if (activeCircleFilter === 'all') return messages; // Maybe chat shows all? Or just context?
-    // Requirement: "Messages are also filtered by the selected Circle context."
+    if (activeCircleFilter === 'all') return messages;
     return messages.filter(m => m.circleId === activeCircleFilter);
   }, [messages, activeCircleFilter]);
 
@@ -53,6 +94,21 @@ export const AppProvider = ({ children }) => {
     setMessages([...messages, newMessage]);
   };
 
+  const deleteEvent = (eventId) => {
+    setEvents(events.filter(e => e.id !== eventId));
+  };
+
+  const deletePhoto = (photoId) => {
+    setPhotos(photos.filter(p => p.id !== photoId));
+  };
+
+  const switchUser = (userId) => {
+    const user = users.find(u => u.id === userId);
+    if (user) {
+        setCurrentUser(user);
+    }
+  };
+
   const getDayContent = (date) => {
     const daysEvents = filteredEvents.filter(e => isSameDay(e.date, date));
     const daysPhotos = filteredPhotos.filter(p => isSameDay(p.date, date));
@@ -62,6 +118,7 @@ export const AppProvider = ({ children }) => {
   return (
     <AppContext.Provider value={{
       currentUser,
+      users,
       circles,
       selectedDate,
       setSelectedDate,
@@ -73,16 +130,20 @@ export const AppProvider = ({ children }) => {
       addEvent,
       addPhoto,
       addMessage,
+      deleteEvent,
+      deletePhoto,
+      switchUser,
       getDayContent,
       isSidebarOpen,
       setIsSidebarOpen,
-      allEvents: events // Exposing all events might be useful for some checks, but 'events' is filtered.
+      allEvents: events
     }}>
       {children}
     </AppContext.Provider>
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAppContext = () => {
   const context = useContext(AppContext);
   if (!context) {
