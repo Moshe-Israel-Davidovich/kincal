@@ -6,7 +6,7 @@ import { useAppContext } from '../context/AppContext';
 import { useTranslation } from 'react-i18next';
 
 const DayModal = ({ date, onClose }) => {
-  const { getDayContent, circles, addEvent, addPhoto } = useAppContext();
+  const { getDayContent, circles, addEvent, addPhoto, deleteEvent, deletePhoto } = useAppContext();
   const { events, photos } = getDayContent(date);
   const [activeTab, setActiveTab] = useState('events'); // 'events', 'gallery', 'add'
   const { t, i18n } = useTranslation();

@@ -71,8 +71,7 @@ export const AppProvider = ({ children }) => {
   }, [photos, activeCircleFilter]);
 
   const filteredMessages = useMemo(() => {
-    if (activeCircleFilter === 'all') return messages; // Maybe chat shows all? Or just context?
-    // Requirement: "Messages are also filtered by the selected Circle context."
+    if (activeCircleFilter === 'all') return messages;
     return messages.filter(m => m.circleId === activeCircleFilter);
   }, [messages, activeCircleFilter]);
 
@@ -97,6 +96,21 @@ export const AppProvider = ({ children }) => {
     setMessages([...messages, newMessage]);
   };
 
+  const deleteEvent = (eventId) => {
+    setEvents(events.filter(e => e.id !== eventId));
+  };
+
+  const deletePhoto = (photoId) => {
+    setPhotos(photos.filter(p => p.id !== photoId));
+  };
+
+  const switchUser = (userId) => {
+    const user = users.find(u => u.id === userId);
+    if (user) {
+        setCurrentUser(user);
+    }
+  };
+
   const getDayContent = (date) => {
     const daysEvents = filteredEvents.filter(e => isSameDay(e.date, date));
     const daysPhotos = filteredPhotos.filter(p => isSameDay(p.date, date));
@@ -106,6 +120,7 @@ export const AppProvider = ({ children }) => {
   return (
     <AppContext.Provider value={{
       currentUser,
+      users,
       circles,
       selectedDate,
       setSelectedDate,
@@ -117,10 +132,13 @@ export const AppProvider = ({ children }) => {
       addEvent,
       addPhoto,
       addMessage,
+      deleteEvent,
+      deletePhoto,
+      switchUser,
       getDayContent,
       isSidebarOpen,
       setIsSidebarOpen,
-      allEvents: events // Exposing all events might be useful for some checks, but 'events' is filtered.
+      allEvents: events
     }}>
       {children}
     </AppContext.Provider>

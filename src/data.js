@@ -1,10 +1,29 @@
 import { addDays, subDays } from 'date-fns';
 
-export const currentUser = {
-  id: 'u1',
-  name: 'Dad',
-  avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Dad',
-};
+export const users = [
+  {
+    id: 'u1',
+    name: 'Dad',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Dad',
+  },
+  {
+    id: 'u2',
+    name: 'Mom',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Mom',
+  },
+  {
+    id: 'u3',
+    name: 'Grandma',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Grandma',
+  },
+  {
+    id: 'u4',
+    name: 'Kid',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Kid',
+  }
+];
+
+export const currentUser = users[0];
 
 export const circles = [
   { id: '1', name: 'Couple', level: 1, description: 'Just Mom & Dad' },
