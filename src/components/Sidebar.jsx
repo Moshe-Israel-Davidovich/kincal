@@ -53,9 +53,7 @@ const Sidebar = () => {
      if (id === '1') return t('circle_couple');
      if (id === '2') return t('circle_nuclear');
      if (id === '3') return t('circle_extended');
-     // Fallback to finding name in circles array
-     const circle = circles.find(c => c.id === id);
-     return circle ? circle.name : `Circle ${id}`;
+     return `Circle ${id}`; // Fallback
   }
 
   const getTargetCircleName = () => {
