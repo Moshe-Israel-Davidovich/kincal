@@ -3,28 +3,46 @@ import {
   startOfMonth, endOfMonth, startOfWeek, endOfWeek, 
   eachDayOfInterval, format, isSameMonth, isToday 
 } from 'date-fns';
+import { enUS, he, ru } from 'date-fns/locale';
 import { useAppContext } from '../context/AppContext';
 import { Calendar as CalendarIcon, Image as ImageIcon } from 'lucide-react';
 import DayModal from './DayModal';
+import { useTranslation } from 'react-i18next';
 
 const CalendarGrid = () => {
   const { selectedDate, getDayContent } = useAppContext();
   const [modalDate, setModalDate] = useState(null);
+  const { t, i18n } = useTranslation();
+
+  // Map i18n language to date-fns locale
+  const getLocale = () => {
+    switch (i18n.language) {
+      case 'he': return he;
+      case 'ru': return ru;
+      default: return enUS;
+    }
+  };
+  const locale = getLocale();
 
   const monthStart = startOfMonth(selectedDate);
   const monthEnd = endOfMonth(monthStart);
-  const startDate = startOfWeek(monthStart);
-  const endDate = endOfWeek(monthEnd);
+  const startDate = startOfWeek(monthStart, { locale });
+  const endDate = endOfWeek(monthEnd, { locale });
 
   const calendarDays = eachDayOfInterval({ start: startDate, end: endDate });
 
-  const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  // Generate week days dynamically based on locale
+  const weekDays = [];
+  const weekStart = startOfWeek(new Date(), { locale });
+  for (let i = 0; i < 7; i++) {
+    weekDays.push(format(eachDayOfInterval({ start: weekStart, end: endOfWeek(weekStart, { locale }) })[i], 'eee', { locale }));
+  }
 
   return (
     <div className="flex-1 p-4 overflow-y-auto">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-2xl font-bold text-slate-800">
-          {format(selectedDate, 'MMMM yyyy')}
+          {format(selectedDate, 'MMMM yyyy', { locale })}
         </h2>
         {/* Simple Navigation controls could go here (prev/next month), 
             but keeping MVP simple based on prompt */}
@@ -32,7 +50,7 @@ const CalendarGrid = () => {
 
       <div className="grid grid-cols-7 gap-1 lg:gap-2">
         {weekDays.map(day => (
-          <div key={day} className="text-center font-semibold text-slate-500 py-2">
+          <div key={day} className="text-center font-semibold text-slate-500 py-2 capitalize">
             {day}
           </div>
         ))}
@@ -78,12 +96,12 @@ const CalendarGrid = () => {
                     </div>
                   ))}
                   {events.length > 3 && (
-                     <div className={`text-[10px] ${hasPhoto ? 'text-white' : 'text-slate-500'}`}>+{events.length - 3} more</div>
+                     <div className={`text-[10px] ${hasPhoto ? 'text-white' : 'text-slate-500'}`}>+{events.length - 3} {t('more_items')}</div>
                   )}
                 </div>
 
                 {hasPhoto && (
-                  <div className="absolute bottom-1 right-1 text-white/80">
+                  <div className="absolute bottom-1 right-1 rtl:right-auto rtl:left-1 text-white/80">
                     <ImageIcon className="w-3 h-3" />
                   </div>
                 )}
