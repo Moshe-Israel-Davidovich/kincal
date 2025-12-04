@@ -12,7 +12,8 @@ const Sidebar = () => {
     activeCircleFilter, 
     currentUser, 
     isSidebarOpen, 
-    setIsSidebarOpen 
+    setIsSidebarOpen,
+    circles // Import circles from context
   } = useAppContext();
   
   const { t, i18n } = useTranslation();
