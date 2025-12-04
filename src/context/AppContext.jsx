@@ -1,16 +1,68 @@
-import React, { createContext, useContext, useState, useMemo } from 'react';
+import React, { createContext, useContext, useState, useMemo, useEffect } from 'react';
 import { initialEvents, initialPhotos, initialMessages, circles, currentUser } from '../data';
 import { isSameDay } from 'date-fns';
 
 const AppContext = createContext();
 
+const STORAGE_KEY = 'kincal_data';
+
+// Helper to load initial state from local storage or fallback to data.js
+const loadInitialState = () => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      // Revive Date objects from ISO strings
+      return {
+        events: (parsed.events || []).map(e => ({ ...e, date: new Date(e.date) })),
+        photos: (parsed.photos || []).map(p => ({ ...p, date: new Date(p.date) })),
+        messages: (parsed.messages || []).map(m => ({ ...m, timestamp: new Date(m.timestamp) }))
+      };
+    }
+  } catch (error) {
+    console.error("Failed to parse local storage data:", error);
+  }
+
+  // Fallback to initial data
+  return {
+    events: initialEvents,
+    photos: initialPhotos,
+    messages: initialMessages
+  };
+};
+
+// Export hook first to satisfy fast refresh rules (if strict) or move constants out.
+// But the warning says: "Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components"
+// This is because we export `useAppContext` (hook) and `AppProvider` (component).
+// This is a common pattern though.
+// We can move `useAppContext` to a separate file or ignore the warning.
+// Since the user wants "0 warnings", we should probably fix it.
+// Or we can disable the rule for this line/file.
+
 export const AppProvider = ({ children }) => {
+  // Load initial data once.
+  // We use a lazy initializer to avoid reading localStorage on every render.
+  // Although we have separate states, we can initialize them all from one read.
+  const [initialData] = useState(loadInitialState);
+
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [activeCircleFilter, setActiveCircleFilter] = useState('all'); // 'all' or circleId
-  const [events, setEvents] = useState(initialEvents);
-  const [photos, setPhotos] = useState(initialPhotos);
-  const [messages, setMessages] = useState(initialMessages);
+
+  const [events, setEvents] = useState(initialData.events);
+  const [photos, setPhotos] = useState(initialData.photos);
+  const [messages, setMessages] = useState(initialData.messages);
+
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  // Persistence Effect: Save to localStorage whenever state changes
+  useEffect(() => {
+    const dataToSave = {
+      events,
+      photos,
+      messages
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+  }, [events, photos, messages]);
 
   // Helper to check if a user has access to a circle (implied logic: user sees circles they are in)
   // For this MVP, we assume the user is in all circles, but filtering hides content.
@@ -83,6 +135,7 @@ export const AppProvider = ({ children }) => {
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAppContext = () => {
   const context = useContext(AppContext);
   if (!context) {

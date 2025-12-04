@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { format } from 'date-fns';
+import { enUS, he, ru } from 'date-fns/locale';
 import { Send, MessageSquare, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const Sidebar = () => {
   const { 
@@ -10,10 +12,22 @@ const Sidebar = () => {
     activeCircleFilter, 
     currentUser, 
     isSidebarOpen, 
-    setIsSidebarOpen 
+    setIsSidebarOpen,
+    circles // Import circles from context
   } = useAppContext();
   
+  const { t, i18n } = useTranslation();
   const [newMessage, setNewMessage] = useState('');
+
+  // Map i18n language to date-fns locale
+  const getLocale = () => {
+    switch (i18n.language) {
+      case 'he': return he;
+      case 'ru': return ru;
+      default: return enUS;
+    }
+  };
+  const locale = getLocale();
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -34,14 +48,34 @@ const Sidebar = () => {
     setNewMessage('');
   };
 
+  // Helper to translate default circle names
+  const getCircleName = (id) => {
+     if (id === '1') return t('circle_couple');
+     if (id === '2') return t('circle_nuclear');
+     if (id === '3') return t('circle_extended');
+     // Fallback to finding name in circles array
+     const circle = circles.find(c => c.id === id);
+     return circle ? circle.name : `Circle ${id}`;
+  }
+
+  const getTargetCircleName = () => {
+    return activeCircleFilter === 'all' ? t('circle_extended') : getCircleName(activeCircleFilter);
+  }
+
   if (!isSidebarOpen) {
     return (
-      <div className="w-12 bg-white border-l border-slate-200 flex flex-col items-center py-4">
+      <div className="w-12 bg-white border-l rtl:border-r rtl:border-l-0 border-slate-200 flex flex-col items-center py-4">
         <button 
           onClick={() => setIsSidebarOpen(true)}
           className="p-2 hover:bg-slate-100 rounded-lg text-slate-600"
         >
-          <ChevronLeft />
+          {/* Flip icon for RTL if needed, but ChevronLeft points left (open sidebar from right).
+              If sidebar is on right, Left opens it? No, if sidebar is on right, Left closes it usually?
+              Wait, sidebar is placed at the end of flex container.
+              If LTR: Main - Sidebar. Sidebar on right. ChevronLeft pointing Left means "Expand to Left"? Or "Go Left"?
+              Actually, the icon should probably flip based on state.
+          */}
+          <ChevronLeft className="rtl:rotate-180 transform transition-transform"/>
         </button>
         <div className="mt-4">
           <MessageSquare className="text-orange-500" />
@@ -51,24 +85,24 @@ const Sidebar = () => {
   }
 
   return (
-    <div className="w-80 bg-white border-l border-slate-200 flex flex-col h-full shadow-xl z-10 transition-all">
+    <div className="w-80 bg-white border-l rtl:border-r rtl:border-l-0 border-slate-200 flex flex-col h-full shadow-xl z-10 transition-all">
       <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
         <h3 className="font-bold text-slate-700 flex items-center gap-2">
           <MessageSquare className="w-4 h-4 text-orange-500" />
-          Family Chat
+          {t('family_chat')}
         </h3>
         <button 
           onClick={() => setIsSidebarOpen(false)}
           className="text-slate-400 hover:text-slate-600"
         >
-          <ChevronRight className="w-5 h-5" />
+          <ChevronRight className="w-5 h-5 rtl:rotate-180 transform transition-transform" />
         </button>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50">
         {messages.length === 0 ? (
           <div className="text-center text-slate-400 text-sm mt-10">
-            No messages yet in this circle.
+            {t('no_messages')}
           </div>
         ) : (
           messages.map(msg => {
@@ -78,12 +112,12 @@ const Sidebar = () => {
                 <div 
                   className={`
                     max-w-[80%] p-3 rounded-lg text-sm shadow-sm
-                    ${isMe ? 'bg-orange-500 text-white rounded-br-none' : 'bg-white text-slate-700 rounded-bl-none border border-slate-200'}
+                    ${isMe ? 'bg-orange-500 text-white rounded-br-none rtl:rounded-br-lg rtl:rounded-bl-none' : 'bg-white text-slate-700 rounded-bl-none rtl:rounded-bl-lg rtl:rounded-br-none border border-slate-200'}
                   `}
                 >
                   <p>{msg.text}</p>
                   <span className={`text-[10px] block mt-1 ${isMe ? 'text-orange-100' : 'text-slate-400'}`}>
-                    {format(msg.timestamp, 'MMM d, h:mm a')}
+                    {format(msg.timestamp, 'MMM d, h:mm a', { locale })}
                   </span>
                 </div>
               </div>
@@ -94,8 +128,8 @@ const Sidebar = () => {
 
       <div className="p-4 border-t border-slate-200 bg-white">
         <div className="text-xs text-slate-400 mb-2">
-          Posting to: <span className="font-semibold text-orange-600">
-            {activeCircleFilter === 'all' ? 'Extended Family' : `Circle ${activeCircleFilter}`}
+          {t('posting_to')} <span className="font-semibold text-orange-600">
+            {getTargetCircleName()}
           </span>
         </div>
         <form onSubmit={handleSubmit} className="flex gap-2">
@@ -103,14 +137,14 @@ const Sidebar = () => {
             type="text"
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="Type a message..."
+            placeholder={t('type_message')}
             className="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
           />
           <button 
             type="submit"
             className="bg-indigo-600 text-white p-2 rounded-lg hover:bg-indigo-700 transition-colors"
           >
-            <Send className="w-4 h-4" />
+            <Send className="w-4 h-4 rtl:rotate-180" />
           </button>
         </form>
       </div>
