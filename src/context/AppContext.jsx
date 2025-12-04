@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useMemo, useEffect } from 'react';
-import { initialEvents, initialPhotos, initialMessages, circles, users, currentUser as defaultUser } from '../data';
+import { initialEvents, initialPhotos, initialMessages, circles, currentUser } from '../data';
 import { isSameDay } from 'date-fns';
 
 const AppContext = createContext();
@@ -16,8 +16,7 @@ const loadInitialState = () => {
       return {
         events: (parsed.events || []).map(e => ({ ...e, date: new Date(e.date) })),
         photos: (parsed.photos || []).map(p => ({ ...p, date: new Date(p.date) })),
-        messages: (parsed.messages || []).map(m => ({ ...m, timestamp: new Date(m.timestamp) })),
-        currentUser: parsed.currentUser || defaultUser
+        messages: (parsed.messages || []).map(m => ({ ...m, timestamp: new Date(m.timestamp) }))
       };
     }
   } catch (error) {
@@ -28,13 +27,14 @@ const loadInitialState = () => {
   return {
     events: initialEvents,
     photos: initialPhotos,
-    messages: initialMessages,
-    currentUser: defaultUser
+    messages: initialMessages
   };
 };
 
 export const AppProvider = ({ children }) => {
   // Load initial data once.
+  // We use a lazy initializer to avoid reading localStorage on every render.
+  // Although we have separate states, we can initialize them all from one read.
   const [initialData] = useState(loadInitialState);
 
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -43,7 +43,6 @@ export const AppProvider = ({ children }) => {
   const [events, setEvents] = useState(initialData.events);
   const [photos, setPhotos] = useState(initialData.photos);
   const [messages, setMessages] = useState(initialData.messages);
-  const [currentUser, setCurrentUser] = useState(initialData.currentUser);
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
@@ -52,11 +51,14 @@ export const AppProvider = ({ children }) => {
     const dataToSave = {
       events,
       photos,
-      messages,
-      currentUser
+      messages
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
-  }, [events, photos, messages, currentUser]);
+  }, [events, photos, messages]);
+
+  // Helper to check if a user has access to a circle (implied logic: user sees circles they are in)
+  // For this MVP, we assume the user is in all circles, but filtering hides content.
+  // The 'activeCircleFilter' determines what is currently visible on the screen.
 
   const filteredEvents = useMemo(() => {
     if (activeCircleFilter === 'all') return events;
