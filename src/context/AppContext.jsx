@@ -31,14 +31,6 @@ const loadInitialState = () => {
   };
 };
 
-// Export hook first to satisfy fast refresh rules (if strict) or move constants out.
-// But the warning says: "Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components"
-// This is because we export `useAppContext` (hook) and `AppProvider` (component).
-// This is a common pattern though.
-// We can move `useAppContext` to a separate file or ignore the warning.
-// Since the user wants "0 warnings", we should probably fix it.
-// Or we can disable the rule for this line/file.
-
 export const AppProvider = ({ children }) => {
   // Load initial data once.
   // We use a lazy initializer to avoid reading localStorage on every render.
