@@ -44,8 +44,7 @@ const CalendarGrid = () => {
         <h2 className="text-2xl font-bold text-slate-800">
           {format(selectedDate, 'MMMM yyyy', { locale })}
         </h2>
-        {/* Simple Navigation controls could go here (prev/next month), 
-            but keeping MVP simple based on prompt */}
+        {/* Navigation could go here */}
       </div>
 
       <div className="grid grid-cols-7 gap-1 lg:gap-2">
@@ -55,42 +54,47 @@ const CalendarGrid = () => {
           </div>
         ))}
 
-        {calendarDays.map(day => {
-          const { events, photos } = getDayContent(day);
-          const hasPhoto = photos.length > 0;
-          const bgPhoto = hasPhoto ? photos[0].url : null;
-          
-          return (
-            <div
-              key={day.toString()}
-              onClick={() => setModalDate(day)}
-              className={`
-                aspect-square border rounded-lg p-1 relative cursor-pointer hover:shadow-md transition-shadow
-                ${!isSameMonth(day, monthStart) ? 'bg-slate-50 text-slate-400' : 'bg-white text-slate-800'}
-                ${isToday(day) ? 'ring-2 ring-orange-500' : 'border-slate-200'}
-                overflow-hidden
-              `}
-            >
-              {/* Photo Background Mode */}
-              {hasPhoto && (
-                <div 
-                  className="absolute inset-0 bg-cover bg-center"
-                  style={{ backgroundImage: `url(${bgPhoto})` }}
-                >
-                  <div className="absolute inset-0 bg-black/40" />
-                </div>
-              )}
+        <div className="grid grid-cols-7 gap-3 lg:gap-4 auto-rows-fr">
+          {calendarDays.map(day => {
+            const { events, photos } = getDayContent(day);
+            const hasPhoto = photos.length > 0;
+            const bgPhoto = hasPhoto ? photos[0].url : null;
+            const isCurrentMonth = isSameMonth(day, monthStart);
+            const isDayToday = isToday(day);
 
-              <div className="relative z-10 h-full flex flex-col">
-                <span className={`text-sm font-medium w-6 h-6 flex items-center justify-center rounded-full ${isToday(day) ? 'bg-orange-500 text-white' : hasPhoto ? 'text-white' : ''}`}>
-                  {format(day, 'd')}
-                </span>
+            return (
+              <div
+                key={day.toString()}
+                onClick={() => setModalDate(day)}
+                className={`
+                  aspect-square rounded-2xl p-2 relative cursor-pointer transition-all duration-200 group
+                  ${!isCurrentMonth ? 'bg-stone-50/50 text-stone-300' : 'bg-white text-stone-700 shadow-sm hover:shadow-md hover:-translate-y-0.5'}
+                  ${isDayToday ? 'ring-2 ring-offset-2 ring-orange-400' : 'border border-stone-100'}
+                  overflow-hidden
+                `}
+              >
+                {/* Photo Background Mode */}
+                {hasPhoto && (
+                  <div
+                    className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
+                    style={{ backgroundImage: `url(${bgPhoto})` }}
+                  >
+                    <div className="absolute inset-0 bg-black/30 group-hover:bg-black/20 transition-colors" />
+                  </div>
+                )}
 
-                <div className="flex-1 mt-1 space-y-1 overflow-hidden">
-                  {events.slice(0, 3).map(event => (
-                    <div 
-                      key={event.id}
-                      className={`text-xs truncate px-1 rounded ${hasPhoto ? 'bg-white/90 text-slate-800' : 'bg-indigo-100 text-indigo-700'}`}
+                <div className="relative z-10 h-full flex flex-col">
+                  <div className="flex justify-between items-start">
+                    <span
+                      className={`
+                        text-sm font-bold w-7 h-7 flex items-center justify-center rounded-full
+                        ${isDayToday
+                          ? 'bg-orange-500 text-white shadow-lg shadow-orange-200'
+                          : hasPhoto
+                            ? 'bg-black/20 text-white backdrop-blur-md'
+                            : 'text-stone-700 group-hover:bg-stone-100'
+                        }
+                      `}
                     >
                       {event.title}
                     </div>
@@ -104,11 +108,11 @@ const CalendarGrid = () => {
                   <div className="absolute bottom-1 right-1 rtl:right-auto rtl:left-1 text-white/80">
                     <ImageIcon className="w-3 h-3" />
                   </div>
-                )}
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
 
       {modalDate && (

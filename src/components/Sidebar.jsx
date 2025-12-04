@@ -32,18 +32,7 @@ const Sidebar = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
-    
-    // If "All" is selected, default to the most private circle (Couple) or prompt. 
-    // For MVP, if "All" is selected, we'll default to Circle 3 (Extended) or just block it.
-    // Let's assume default is '3' (Extended) if 'all' is picked, or require selection.
-    // Better UX: Show a selector. For now, defaulting to context or asking user.
-    // Prompt says: "Messages are also filtered by the selected Circle context."
-    // So if I am in "Couple", I send to "Couple". 
-    // If I am in "All", where does it go? Let's assume "Extended Family" (3) as a safe default for "Public" 
-    // OR disable input if 'all'.
-    // Let's go with: if 'all', default to circleId '3' (Extended), otherwise use active filter.
     const targetCircleId = activeCircleFilter === 'all' ? '3' : activeCircleFilter;
-
     addMessage(newMessage, targetCircleId);
     setNewMessage('');
   };
@@ -65,7 +54,7 @@ const Sidebar = () => {
       <div className="w-12 bg-white border-l rtl:border-r rtl:border-l-0 border-slate-200 flex flex-col items-center py-4">
         <button 
           onClick={() => setIsSidebarOpen(true)}
-          className="p-2 hover:bg-slate-100 rounded-lg text-slate-600"
+          className="p-3 hover:bg-stone-100 rounded-xl text-stone-500 transition-colors"
         >
           {/* Flip icon for RTL if needed, but ChevronLeft points left (open sidebar from right).
               If sidebar is on right, Left opens it? No, if sidebar is on right, Left closes it usually?
@@ -75,8 +64,8 @@ const Sidebar = () => {
           */}
           <ChevronLeft className="rtl:rotate-180 transform transition-transform"/>
         </button>
-        <div className="mt-4">
-          <MessageSquare className="text-orange-500" />
+        <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center text-orange-600">
+          <MessageSquare className="w-5 h-5" />
         </div>
       </div>
     );
@@ -91,20 +80,23 @@ const Sidebar = () => {
         </h3>
         <button 
           onClick={() => setIsSidebarOpen(false)}
-          className="text-slate-400 hover:text-slate-600"
+          className="text-stone-400 hover:text-stone-600 p-1 hover:bg-stone-100 rounded-lg transition-colors"
         >
           <ChevronRight className="w-5 h-5 rtl:rotate-180 transform transition-transform" />
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50">
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar bg-stone-50/30">
         {messages.length === 0 ? (
           <div className="text-center text-slate-400 text-sm mt-10">
             {t('no_messages')}
           </div>
         ) : (
-          messages.map(msg => {
+          messages.map((msg, idx) => {
             const isMe = msg.senderId === currentUser.id;
+            const showAvatar = idx === 0 || messages[idx - 1].senderId !== msg.senderId;
+
             return (
               <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
                 <div 
@@ -140,7 +132,7 @@ const Sidebar = () => {
           />
           <button 
             type="submit"
-            className="bg-indigo-600 text-white p-2 rounded-lg hover:bg-indigo-700 transition-colors"
+            className="w-9 h-9 bg-indigo-600 text-white rounded-full flex items-center justify-center hover:bg-indigo-700 transition-transform active:scale-95 shadow-md shadow-indigo-200"
           >
             <Send className="w-4 h-4 rtl:rotate-180" />
           </button>

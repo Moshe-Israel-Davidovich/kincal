@@ -25,29 +25,16 @@ const DayModal = ({ date, onClose }) => {
   const [formType, setFormType] = useState('event'); // 'event' or 'photo'
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
-  const [photoUrl, setPhotoUrl] = useState(''); // Simple URL input for MVP
-  const [selectedCircle, setSelectedCircle] = useState(circles[1].id); // Default to Nuclear
+  const [photoUrl, setPhotoUrl] = useState('');
+  const [selectedCircle, setSelectedCircle] = useState(circles[1].id);
 
   const handleAddSubmit = (e) => {
     e.preventDefault();
-    
     if (formType === 'event') {
-      addEvent({
-        title,
-        description: desc,
-        date: date,
-        circleId: selectedCircle,
-      });
+      addEvent({ title, description: desc, date: date, circleId: selectedCircle });
     } else {
-      addPhoto({
-        url: photoUrl || `https://picsum.photos/seed/${Math.random()}/800/600`, // Fallback for demo
-        caption: title,
-        date: date,
-        circleId: selectedCircle,
-      });
+      addPhoto({ url: photoUrl || `https://picsum.photos/seed/${Math.random()}/800/600`, caption: title, date: date, circleId: selectedCircle });
     }
-    
-    // Reset and go back to list
     setTitle('');
     setDesc('');
     setPhotoUrl('');
@@ -63,8 +50,8 @@ const DayModal = ({ date, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[85vh] ring-1 ring-white/20 animate-in zoom-in-95 duration-200">
         
         {/* Header */}
         <div className="bg-slate-50 border-b border-slate-200 p-4 flex items-center justify-between">
@@ -101,7 +88,7 @@ const DayModal = ({ date, onClose }) => {
         </div>
 
         {/* Content Body */}
-        <div className="flex-1 overflow-y-auto p-4 bg-white">
+        <div className="flex-1 overflow-y-auto p-4 px-6 pb-6 bg-white custom-scrollbar">
           
           {/* EVENTS TAB */}
           {activeTab === 'events' && (
@@ -110,14 +97,14 @@ const DayModal = ({ date, onClose }) => {
                 <div className="text-center text-slate-400 py-8">{t('no_events')}</div>
               ) : (
                 events.map(event => (
-                  <div key={event.id} className="p-3 bg-indigo-50 border border-indigo-100 rounded-lg">
+                  <div key={event.id} className="group p-4 bg-white border border-stone-200 rounded-2xl hover:border-indigo-200 hover:shadow-md transition-all">
                     <div className="flex justify-between items-start">
                       <h4 className="font-semibold text-indigo-900">{event.title}</h4>
                       <span className="text-xs bg-indigo-200 text-indigo-800 px-2 py-0.5 rounded-full">
                         {getCircleName(event.circleId)}
                       </span>
                     </div>
-                    {event.description && <p className="text-sm text-indigo-700 mt-1">{event.description}</p>}
+                    {event.description && <p className="text-sm text-stone-600 mt-2 leading-relaxed">{event.description}</p>}
                   </div>
                 ))
               )}
@@ -126,7 +113,7 @@ const DayModal = ({ date, onClose }) => {
 
           {/* GALLERY TAB */}
           {activeTab === 'gallery' && (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-4">
               {photos.length === 0 ? (
                 <div className="col-span-2 text-center text-slate-400 py-8">{t('no_photos')}</div>
               ) : (
@@ -194,7 +181,7 @@ const DayModal = ({ date, onClose }) => {
                     <textarea 
                       value={desc}
                       onChange={(e) => setDesc(e.target.value)}
-                      className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
+                      className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-100 focus:border-orange-400 outline-none transition-all placeholder-stone-400 min-h-[100px]"
                       rows="3"
                     ></textarea>
                   </div>
@@ -207,7 +194,7 @@ const DayModal = ({ date, onClose }) => {
                       type="text" 
                       value={photoUrl}
                       onChange={(e) => setPhotoUrl(e.target.value)}
-                      className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
+                      className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-100 focus:border-orange-400 outline-none transition-all placeholder-stone-400"
                       placeholder="https://..."
                     />
                     <p className="text-xs text-slate-400 mt-1">{t('leave_blank')}</p>
@@ -229,7 +216,7 @@ const DayModal = ({ date, onClose }) => {
 
                 <button 
                   type="submit" 
-                  className="w-full bg-orange-600 text-white font-semibold py-2 rounded-lg hover:bg-orange-700 transition-colors"
+                  className="w-full bg-stone-900 text-white font-bold py-3.5 rounded-xl hover:bg-orange-600 transition-colors shadow-lg shadow-stone-200 mt-2"
                 >
                   {formType === 'event' ? t('add_event_btn') : t('add_photo_btn')}
                 </button>
