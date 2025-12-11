@@ -5,7 +5,7 @@ import {
 } from 'date-fns';
 import { enUS, he, ru } from 'date-fns/locale';
 import { useAppContext } from '../context/AppContext';
-import { Calendar as CalendarIcon, Image as ImageIcon } from 'lucide-react';
+import { Image as ImageIcon } from 'lucide-react';
 import DayModal from './DayModal';
 import { useTranslation } from 'react-i18next';
 
@@ -96,19 +96,38 @@ const CalendarGrid = () => {
                         }
                       `}
                     >
-                      {event.title}
-                    </div>
-                  ))}
-                  {events.length > 3 && (
-                     <div className={`text-[10px] ${hasPhoto ? 'text-white' : 'text-slate-500'}`}>+{events.length - 3} {t('more_items')}</div>
-                  )}
+                      {format(day, 'd')}
+                    </span>
+                  </div>
+
+                  {/* Events List */}
+                  <div className="mt-1 flex-1 flex flex-col gap-1 overflow-hidden">
+                    {events.slice(0, 3).map((event) => (
+                      <div
+                        key={event.id}
+                        className={`text-[10px] truncate px-1.5 py-0.5 rounded-full w-full
+                          ${hasPhoto
+                            ? 'bg-white/20 text-white backdrop-blur-sm'
+                            : 'bg-indigo-50 text-indigo-700'
+                          }
+                        `}
+                      >
+                        {event.title}
+                      </div>
+                    ))}
+                    {events.length > 3 && (
+                       <div className={`text-[10px] pl-1 ${hasPhoto ? 'text-white/80' : 'text-slate-400'}`}>
+                         +{events.length - 3} {t('more_items')}
+                       </div>
+                    )}
+                  </div>
                 </div>
 
                 {hasPhoto && (
                   <div className="absolute bottom-1 right-1 rtl:right-auto rtl:left-1 text-white/80">
                     <ImageIcon className="w-3 h-3" />
                   </div>
-                </div>
+                )}
               </div>
             );
           })}

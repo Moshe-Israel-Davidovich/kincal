@@ -1,0 +1,10 @@
+
+> kincal@0.0.0 dev
+> vite
+
+
+  VITE v5.4.21  ready in 278 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: use --host to expose
+9:12:57 AM [vite] hmr update /src/index.css
