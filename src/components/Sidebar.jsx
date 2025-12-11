@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { format } from 'date-fns';
 import { enUS, he, ru } from 'date-fns/locale';
-import { Send, MessageSquare, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Send, MessageSquare, ChevronRight, ChevronLeft } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 const Sidebar = () => {
@@ -13,7 +13,7 @@ const Sidebar = () => {
     currentUser, 
     isSidebarOpen, 
     setIsSidebarOpen,
-    circles // Import circles from context
+    users // Use users to find avatars
   } = useAppContext();
   
   const { t, i18n } = useTranslation();
@@ -37,7 +37,6 @@ const Sidebar = () => {
     setNewMessage('');
   };
 
-  // Helper to translate default circle names
   const getCircleName = (id) => {
      if (id === '1') return t('circle_couple');
      if (id === '2') return t('circle_nuclear');
@@ -49,6 +48,11 @@ const Sidebar = () => {
     return activeCircleFilter === 'all' ? t('circle_extended') : getCircleName(activeCircleFilter);
   }
 
+  const getUserAvatar = (userId) => {
+      const u = users.find(user => user.id === userId);
+      return u ? u.avatar : null;
+  }
+
   if (!isSidebarOpen) {
     return (
       <div className="w-12 bg-white border-l rtl:border-r rtl:border-l-0 border-slate-200 flex flex-col items-center py-4">
@@ -56,12 +60,6 @@ const Sidebar = () => {
           onClick={() => setIsSidebarOpen(true)}
           className="p-3 hover:bg-stone-100 rounded-xl text-stone-500 transition-colors"
         >
-          {/* Flip icon for RTL if needed, but ChevronLeft points left (open sidebar from right).
-              If sidebar is on right, Left opens it? No, if sidebar is on right, Left closes it usually?
-              Wait, sidebar is placed at the end of flex container.
-              If LTR: Main - Sidebar. Sidebar on right. ChevronLeft pointing Left means "Expand to Left"? Or "Go Left"?
-              Actually, the icon should probably flip based on state.
-          */}
           <ChevronLeft className="rtl:rotate-180 transform transition-transform"/>
         </button>
         <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center text-orange-600">
@@ -87,7 +85,7 @@ const Sidebar = () => {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar bg-stone-50/30">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-stone-50/30">
         {messages.length === 0 ? (
           <div className="text-center text-slate-400 text-sm mt-10">
             {t('no_messages')}
@@ -96,13 +94,22 @@ const Sidebar = () => {
           messages.map((msg, idx) => {
             const isMe = msg.senderId === currentUser.id;
             const showAvatar = idx === 0 || messages[idx - 1].senderId !== msg.senderId;
+            const avatarUrl = getUserAvatar(msg.senderId);
 
             return (
-              <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+              <div key={msg.id} className={`flex gap-2 ${isMe ? 'justify-end' : 'justify-start'}`}>
+                {!isMe && showAvatar && (
+                   <img src={avatarUrl} alt="" className="w-8 h-8 rounded-full bg-slate-200 self-end mb-1" />
+                )}
+                {!isMe && !showAvatar && <div className="w-8" />}
+
                 <div 
                   className={`
-                    max-w-[80%] p-3 rounded-lg text-sm shadow-sm
-                    ${isMe ? 'bg-orange-500 text-white rounded-br-none rtl:rounded-br-lg rtl:rounded-bl-none' : 'bg-white text-slate-700 rounded-bl-none rtl:rounded-bl-lg rtl:rounded-br-none border border-slate-200'}
+                    max-w-[75%] p-3 rounded-2xl text-sm shadow-sm
+                    ${isMe
+                        ? 'bg-orange-500 text-white rounded-br-none rtl:rounded-br-2xl rtl:rounded-bl-none'
+                        : 'bg-white text-slate-700 rounded-bl-none rtl:rounded-bl-2xl rtl:rounded-br-none border border-slate-200'
+                    }
                   `}
                 >
                   <p>{msg.text}</p>

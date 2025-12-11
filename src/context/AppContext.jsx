@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, useMemo, useEffect } from 'react';
-import { initialEvents, initialPhotos, initialMessages, circles, currentUser } from '../data';
-import { isSameDay } from 'date-fns';
+import React, { createContext, useContext, useState, useMemo, useEffect, useCallback } from 'react';
+import { initialEvents, initialPhotos, initialMessages, circles, currentUser as initialCurrentUser, users } from '../data';
+import { format } from 'date-fns';
 
 const AppContext = createContext();
 
@@ -33,10 +33,9 @@ const loadInitialState = () => {
 
 export const AppProvider = ({ children }) => {
   // Load initial data once.
-  // We use a lazy initializer to avoid reading localStorage on every render.
-  // Although we have separate states, we can initialize them all from one read.
   const [initialData] = useState(loadInitialState);
 
+  const [currentUser, setCurrentUser] = useState(initialCurrentUser);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [activeCircleFilter, setActiveCircleFilter] = useState('all'); // 'all' or circleId
 
@@ -56,10 +55,7 @@ export const AppProvider = ({ children }) => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
   }, [events, photos, messages]);
 
-  // Helper to check if a user has access to a circle (implied logic: user sees circles they are in)
-  // For this MVP, we assume the user is in all circles, but filtering hides content.
-  // The 'activeCircleFilter' determines what is currently visible on the screen.
-
+  // Optimized Filtering using useMemo
   const filteredEvents = useMemo(() => {
     if (activeCircleFilter === 'all') return events;
     return events.filter(e => e.circleId === activeCircleFilter);
@@ -75,17 +71,48 @@ export const AppProvider = ({ children }) => {
     return messages.filter(m => m.circleId === activeCircleFilter);
   }, [messages, activeCircleFilter]);
 
-  const addEvent = (newEvent) => {
+  // Pre-index content by date to optimize getDayContent
+  const eventsByDate = useMemo(() => {
+    const map = {};
+    filteredEvents.forEach(e => {
+      const key = format(e.date, 'yyyy-MM-dd');
+      if (!map[key]) map[key] = [];
+      map[key].push(e);
+    });
+    return map;
+  }, [filteredEvents]);
+
+  const photosByDate = useMemo(() => {
+    const map = {};
+    filteredPhotos.forEach(p => {
+      const key = format(p.date, 'yyyy-MM-dd');
+      if (!map[key]) map[key] = [];
+      map[key].push(p);
+    });
+    return map;
+  }, [filteredPhotos]);
+
+  // Optimized getDayContent - O(1) lookup
+  const getDayContent = useCallback((date) => {
+    const key = format(date, 'yyyy-MM-dd');
+    return {
+      events: eventsByDate[key] || [],
+      photos: photosByDate[key] || []
+    };
+  }, [eventsByDate, photosByDate]);
+
+  // Stable handlers using functional state updates where possible
+  const addEvent = useCallback((newEvent) => {
     const eventWithId = { ...newEvent, id: Math.random().toString(36).substr(2, 9) };
-    setEvents([...events, eventWithId]);
-  };
+    setEvents(prev => [...prev, eventWithId]);
+  }, []);
 
-  const addPhoto = (newPhoto) => {
+  const addPhoto = useCallback((newPhoto) => {
      const photoWithId = { ...newPhoto, id: Math.random().toString(36).substr(2, 9) };
-     setPhotos([...photos, photoWithId]);
-  }
+     setPhotos(prev => [...prev, photoWithId]);
+  }, []);
 
-  const addMessage = (text, circleId) => {
+  const addMessage = useCallback((text, circleId) => {
     const newMessage = {
       id: Math.random().toString(36).substr(2, 9),
       senderId: currentUser.id,
@@ -93,53 +120,66 @@ export const AppProvider = ({ children }) => {
       timestamp: new Date(),
       circleId,
     };
-    setMessages([...messages, newMessage]);
-  };
+    setMessages(prev => [...prev, newMessage]);
+  }, [currentUser.id]);
 
-  const deleteEvent = (eventId) => {
-    setEvents(events.filter(e => e.id !== eventId));
-  };
+  const deleteEvent = useCallback((eventId) => {
+    setEvents(prev => prev.filter(e => e.id !== eventId));
+  }, []);
 
-  const deletePhoto = (photoId) => {
-    setPhotos(photos.filter(p => p.id !== photoId));
-  };
+  const deletePhoto = useCallback((photoId) => {
+    setPhotos(prev => prev.filter(p => p.id !== photoId));
+  }, []);
 
-  const switchUser = (userId) => {
+  const switchUser = useCallback((userId) => {
     const user = users.find(u => u.id === userId);
     if (user) {
         setCurrentUser(user);
     }
-  };
+  }, []);
 
-  const getDayContent = (date) => {
-    const daysEvents = filteredEvents.filter(e => isSameDay(e.date, date));
-    const daysPhotos = filteredPhotos.filter(p => isSameDay(p.date, date));
-    return { events: daysEvents, photos: daysPhotos };
-  };
+  // Memoize context value to prevent unnecessary re-renders in consumers
+  const contextValue = useMemo(() => ({
+    currentUser,
+    users,
+    circles,
+    selectedDate,
+    setSelectedDate,
+    activeCircleFilter,
+    setActiveCircleFilter,
+    events: filteredEvents,
+    photos: filteredPhotos,
+    messages: filteredMessages,
+    addEvent,
+    addPhoto,
+    addMessage,
+    deleteEvent,
+    deletePhoto,
+    switchUser,
+    getDayContent,
+    isSidebarOpen,
+    setIsSidebarOpen,
+    allEvents: events
+  }), [
+    currentUser,
+    selectedDate,
+    activeCircleFilter,
+    filteredEvents,
+    filteredPhotos,
+    filteredMessages,
+    addEvent,
+    addPhoto,
+    addMessage,
+    deleteEvent,
+    deletePhoto,
+    switchUser,
+    getDayContent,
+    isSidebarOpen,
+    events
+  ]);
 
   return (
-    <AppContext.Provider value={{
-      currentUser,
-      users,
-      circles,
-      selectedDate,
-      setSelectedDate,
-      activeCircleFilter,
-      setActiveCircleFilter,
-      events: filteredEvents,
-      photos: filteredPhotos,
-      messages: filteredMessages,
-      addEvent,
-      addPhoto,
-      addMessage,
-      deleteEvent,
-      deletePhoto,
-      switchUser,
-      getDayContent,
-      isSidebarOpen,
-      setIsSidebarOpen,
-      allEvents: events
-    }}>
+    <AppContext.Provider value={contextValue}>
       {children}
     </AppContext.Provider>
   );
